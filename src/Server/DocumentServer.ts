@@ -70,32 +70,30 @@ app.get('/documents', (req: express.Request, res: express.Response) => {
     res.send(documentNames);
 });
 
-// PUT /documents/:name
+// PUT /document/clear/formula/:name
 // userName is in the document body
-app.put('/documents/:name', (req: express.Request, res: express.Response) => {
+app.put("/documents/:name", (req: express.Request, res: express.Response) => {
     const name = req.params.name;
     // get the userName from the body
     const userName = req.body.userName;
     if (!userName) {
-        res.status(400).send('userName is required');
-        return;
+      res.status(400).send("userName is required");
+      return;
     }
-
-
+  
     // is this name valid?
     const documentNames = documentHolder.getDocumentNames();
-
-
+  
     if (documentNames.indexOf(name) === -1) {
-        console.log(`Document ${name} not found, creating it`);
-        documentHolder.createDocument(name, 5, 8, userName);
+      console.log(`Document ${name} not found, creating it`);
+      documentHolder.createDocument(name, 5, 8, userName);
     }
-
+  
     // get the document
     const document = documentHolder.getDocumentJSON(name, userName);
-
+  
     res.status(200).send(document);
-});
+  });
 
 app.get('/debug', (req: express.Request, res: express.Response) => {
     debug = !debug
@@ -239,6 +237,27 @@ app.put('/document/removetoken/:name', (req: express.Request, res: express.Respo
 
     res.status(200).send(resultJSON);
 });
+
+app.put(
+    "/document/clear/formula/:name",
+    (req: express.Request, res: express.Response) => {
+      const name = req.params.name;
+      // is this name valid?
+      const documentNames = documentHolder.getDocumentNames();
+      if (documentNames.indexOf(name) === -1) {
+        res.status(404).send(`Document ${name} not found`);
+        return;
+      }
+      // get the user name from the body
+      const userName = req.body.userName;
+      if (!userName) {
+        res.status(400).send("userName is required");
+        return;
+      }
+      // clear the formula
+      const resultJSON = documentHolder.clearFormula(name, userName);
+      res.status(200).send(resultJSON);
+    });
 
 // get the port we should be using
 const port = PortsGlobal.serverPort;
