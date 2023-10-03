@@ -1,7 +1,7 @@
 import Cell from "./Cell"
 import SheetMemory from "./SheetMemory"
 import { ErrorMessages } from "./GlobalDefinitions";
-
+import { FormulaParser } from "./FormulaParser";
 
 
 export class FormulaEvaluator {
@@ -19,67 +19,58 @@ export class FormulaEvaluator {
   }
 
   /**
-    * place holder for the evaluator.   I am not sure what the type of the formula is yet 
-    * I do know that there will be a list of tokens so i will return the length of the array
-    * 
-    * I also need to test the error display in the front end so i will set the error message to
-    * the error messages found In GlobalDefinitions.ts
-    * 
-    * according to this formula.
-    * 
-    7 tokens partial: "#ERR",
-    8 tokens divideByZero: "#DIV/0!",
-    9 tokens invalidCell: "#REF!",
-  10 tokens invalidFormula: "#ERR",
-  11 tokens invalidNumber: "#ERR",
-  12 tokens invalidOperator: "#ERR",
-  13 missingParentheses: "#ERR",
-  0 tokens emptyFormula: "#EMPTY!",
-
-                    When i get back from my quest to save the world from the evil thing i will fix.
-                      (if you are in a hurry you can fix it yourself)
-                               Sincerely 
-                               Bilbo
-    * 
+   * 
+   * @param formula 
+   * @returns the result of the formula and the error message
    */
-
   evaluate(formula: FormulaType) {
-
-
-    // set the this._result to the length of the formula
-
-    this._result = formula.length;
-    this._errorMessage = "";
-
-    switch (formula.length) {
-      case 0:
-        this._errorMessage = ErrorMessages.emptyFormula;
-        break;
-      case 7:
-        this._errorMessage = ErrorMessages.partial;
-        break;
-      case 8:
-        this._errorMessage = ErrorMessages.divideByZero;
-        break;
-      case 9:
-        this._errorMessage = ErrorMessages.invalidCell;
-        break;
-      case 10:
-        this._errorMessage = ErrorMessages.invalidFormula;
-        break;
-      case 11:
-        this._errorMessage = ErrorMessages.invalidNumber;
-        break;
-      case 12:
-        this._errorMessage = ErrorMessages.invalidOperator;
-        break;
-      case 13:
-        this._errorMessage = ErrorMessages.missingParentheses;
-        break;
-      default:
-        this._errorMessage = "";
-        break;
+    let error: string = "";
+    
+    // if the formula is empty return 0 and set  error message to empty formula
+    if (formula.length === 0) {
+      this._result = 0;
+      this._errorMessage = ErrorMessages.emptyFormula;
+      return;
     }
+
+    const newFormula = [];
+    for (const token of formula) {
+      // if the token is a number then push the number to the new formula
+      if (this.isNumber(token)) {
+        newFormula.push(Number(token));
+        // if the token is a cell reference then push the value of the cell to the new formula
+      } else if (this.isCellReference(token)) {
+        error = this.getCellValue(token)[1];
+        newFormula.push(this.getCellValue(token)[0]);
+        // if the token is neither then push the token to the new formula
+      } else {
+        newFormula.push(token);
+      }
+    }
+
+    // if the last token in the formula is an operator or closing parenthesis then remove it
+    const invalidEnding = /[+\-*/(]$/; 
+      for (let i = newFormula.length - 1; i >= 0; i--) {
+        if (invalidEnding.test(newFormula[i])) {
+          error = ErrorMessages.invalidFormula;
+          newFormula.pop();
+        } else {
+          break;
+        }
+      }
+    
+    // call the calculate method from the FormulaParser class on the new formula
+    // if the result is Infinity then set the error message to divide by zero
+    const parser = new FormulaParser(newFormula);
+    try {
+      this._result = parser.calculate();
+    } catch (err: any) {
+      error = err.message;
+    }
+    if (this._result === Infinity) {
+      error = ErrorMessages.divideByZero;
+    }
+    this._errorMessage = error;
   }
 
   public get error(): string {
@@ -89,8 +80,6 @@ export class FormulaEvaluator {
   public get result(): number {
     return this._result;
   }
-
-
 
 
   /**

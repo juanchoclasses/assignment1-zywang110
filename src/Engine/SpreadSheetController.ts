@@ -313,7 +313,7 @@ export class SpreadSheetController {
     }
     const userEditing = this._contributingUsers.get(user);
     if (!userEditing!.isEditing) {
-      return;
+      return;      
     }
     if (!userEditing) {
       return;
@@ -322,7 +322,7 @@ export class SpreadSheetController {
       return;
     }
 
-    userEditing!.formulaBuilder.setFormula([]);
+    userEditing.formulaBuilder.setFormula([]);
     let cellBeingEdited = this._contributingUsers.get(user)?.cellLabel;
 
     // this should not empty but just in case throw error
